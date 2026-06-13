@@ -4,11 +4,14 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Navbar } from '@/components/navbar'
 import { RecipeList } from '@/components/recipe-list'
-import { Loader2, Refrigerator, Bell, Calendar } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useToast } from '@/hooks/use-toast'
+import { Loader2, Refrigerator } from 'lucide-react'
+
+const getUnitInfo = (name: string) => {
+  if (!name) return 'Gram';
+  const lowerName = name.toLowerCase();
+  const pieceItems = ['yumurta', 'limon', 'ekmek', 'lavaş', 'yufka', 'milföy', 'pide', 'kedi dili', 'tortilla'];
+  return pieceItems.some(item => lowerName.includes(item)) ? 'Adet' : 'Gram';
+}
 
 export default function TariflerPage() {
   const supabase = createClient()
@@ -16,27 +19,41 @@ export default function TariflerPage() {
   const [recipeMatches, setRecipeMatches] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [pantryCount, setPantryCount] = useState(0)
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
-  const { toast } = useToast()
 
-  // 1. Hatırlatıcı Kurma Fonksiyonu
-  const handleSetReminder = async () => {
+  const setReminder = async (match: any) => {
+    if (!user) { 
+      alert("Hatırlatıcı kurmak için giriş yapmalısınız!"); 
+      return; 
+    }
+    
     try {
-      const webhookUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL
-      if (!webhookUrl) throw new Error("Webhook URL yapılandırılmamış.")
+      const ingredientsList = [...match.availableIngredients, ...match.missingIngredients].map((item: any) => item.ingredient.name);
+      
+      const { error } = await supabase.from('reminders').insert({
+        user_id: user.id,
+        recipe_name: match.recipe.name,
+        ingredients_needed: ingredientsList,
+        reminder_time: '18:00:00'
+      });
 
-      await fetch(webhookUrl, {
+      if (error) throw error;
+
+      await fetch('http://localhost:5678/webhook-test/3899683d-c909-4e38-b6df-69735e4dc8b4', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'set_reminder', targetDate: selectedDate }),
-      })
-      toast({ title: "Başarılı!", description: "Hatırlatıcı kuruldu." })
+        body: JSON.stringify({
+          recipe_name: match.recipe.name,
+          ingredients_needed: ingredientsList
+        })
+      });
+
+      alert("Harika! Akşam 18:00 için hatırlatıcı kuruldu, Telegram'dan bildirim alacaksın.");
     } catch (e) {
-      toast({ variant: "destructive", title: "Hata", description: "Hatırlatıcı başarısız." })
+      console.error(e);
+      alert("Hatırlatıcı kurulurken bir hata oluştu.");
     }
   }
 
-  // 2. Verileri Çeken Fonksiyon (Senin orijinal kodun)
   useEffect(() => {
     async function loadTarifler() {
       try {
@@ -48,41 +65,168 @@ export default function TariflerPage() {
         const pantryItems = savedPantry ? JSON.parse(savedPantry) : []
         setPantryCount(pantryItems.length)
 
-        if (pantryItems.length === 0) { setLoading(false); return; }
+        if (pantryItems.length === 0) {
+          setRecipeMatches([])
+          setLoading(false)
+          return
+        }
 
-        // Supabase'den tarifleri çek... (Senin orijinal kodun buraya gelecek)
-        // ... (Veri çekme ve match işlemleri)
-        
+        const userPantryMap: Record<string, number> = {}
+        pantryItems.forEach((item: any) => {
+          const id = item.ingredient?.id || item.ingredient_id
+          userPantryMap[id] = item.quantity || 0 
+        })
+
+        const { data: recipesData, error } = await supabase
+          .from('recipes')
+          .select(`
+            id,
+            name,
+            portions,
+            total_cost,
+            description,
+            image_url,
+            prep_time,
+            calories, 
+            recipe_ingredients (
+              amount_g,
+              calculated_cost,
+              ingredients (
+                id,
+                name
+              )
+            ),
+            recipe_steps (
+              step_number,
+              instruction
+            )
+          `)
+
+        if (error) throw error
+
+        if (recipesData && recipesData.length > 0) {
+          const matchedRecipes = recipesData.map((recipe: any) => {
+            const allReqIngredients = recipe.recipe_ingredients || []
+
+            const availableIngredients: any[] = []
+            const missingIngredients: any[] = []
+            let missingCost = 0
+            let totalRequiredItems = allReqIngredients.length
+            let completelyAvailableItems = 0
+
+            allReqIngredients.forEach((ri: any) => {
+              const ingId = ri.ingredients?.id
+              const reqQty = Number(ri.amount_g || 0) 
+              const userQty = Number(userPantryMap[ingId] || 0)
+              
+              const isAmountSpecified = reqQty > 0;
+              const isSufficient = isAmountSpecified ? (userQty >= reqQty) : (userQty > 0);
+              const unitLabel = isAmountSpecified ? getUnitInfo(ri.ingredients?.name) : '';
+
+              const formattedIng = {
+                ingredient: {
+                  name: ri.ingredients?.name || 'Bilinmeyen Malzeme',
+                  unit: unitLabel
+                }
+              }
+
+              if (isSufficient) {
+                availableIngredients.push({ 
+                  ...formattedIng, 
+                  availableQty: isAmountSpecified ? reqQty : 'Göz Kararı (Var)' 
+                })
+                completelyAvailableItems++
+              } else {
+                const missingQty = isAmountSpecified ? (reqQty - userQty) : 'Hiç Yok'
+                missingIngredients.push({ ...formattedIng, missingQty })
+
+                if (isAmountSpecified) {
+                  const costPerGram = Number(ri.calculated_cost || 0) / reqQty
+                  missingCost += costPerGram * (reqQty - userQty)
+                } else {
+                  missingCost += Number(ri.calculated_cost || 0)
+                }
+
+                if (userQty > 0 && isAmountSpecified) {
+                  availableIngredients.push({ ...formattedIng, availableQty: userQty })
+                }
+              }
+            })
+
+            const matchPercentage = totalRequiredItems > 0
+              ? Math.round((completelyAvailableItems / totalRequiredItems) * 100)
+              : 0
+
+            let instructions = (recipe.recipe_steps || [])
+              .sort((a: any, b: any) => a.step_number - b.step_number)
+              .map((step: any) => step.instruction)
+
+            if (instructions.length === 0) {
+              instructions = ['Malzemeleri hazırlayın.', 'Tarif adımlarını uygulayarak pişirme işlemini tamamlayın.', 'Sıcak servis edin.']
+            }
+
+            return {
+              recipe: {
+                id: recipe.id,
+                name: recipe.name,
+                image_url: recipe.image_url || 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?q=80&w=400',
+                description: recipe.description || 'Mutfak Asistanı veritabanından, dolabınızdaki malzemelere özel olarak listelenmiştir.',
+                prepTime: recipe.prep_time || 30,
+                servings: recipe.portions || 4,
+                calories: recipe.calories || 0, 
+                instructions
+              },
+              matchPercentage,
+              availableIngredients,
+              missingIngredients,
+              estimatedCost: Math.round(missingCost * 100) / 100
+            }
+          })
+
+          const sortedMatches = matchedRecipes
+            .filter((m: any) => m.matchPercentage >= 0) 
+            .sort((a: any, b: any) => b.matchPercentage - a.matchPercentage)
+
+          setRecipeMatches(sortedMatches)
+        }
+
       } catch (err) {
-        console.error("Hata:", err)
+        console.error("Supabase Veri Çekme Hatası:", err)
+        setRecipeMatches([])
       } finally {
         setLoading(false)
       }
     }
+
     loadTarifler()
   }, [supabase])
 
-  if (loading) return <div className="flex min-h-screen items-center justify-center"><Loader2 className="animate-spin h-8 w-8" /></div>
+  if (loading) return (
+    <div className="flex min-h-screen flex-col items-center justify-center gap-2 bg-background">
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <p className="text-muted-foreground text-sm font-medium">Mutfak Asistanı veritabanından tarifleriniz hesaplanıyor...</p>
+    </div>
+  )
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar user={user} />
-      <main className="mx-auto max-w-7xl px-4 py-8">
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mb-8 border-b pb-5">
+          <h1 className="text-4xl font-extrabold tracking-tight text-foreground">Akıllı Tarif Önerileri</h1>
+          <p className="mt-2 text-lg text-muted-foreground">Evinizdeki malzemelerin gramajlarına göre tam hesaplanmış maliyet ve tarif önerileri.</p>
+        </div>
         
-        {/* YENİ: Üstte Hatırlatıcı Paneli */}
-        <Card className="mb-8 border-primary/20">
-          <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Bell className="h-5 w-5 text-primary" /> Hatırlatıcı Kur</CardTitle></CardHeader>
-          <CardContent className="flex flex-wrap gap-4 items-end">
-            <Input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="w-48" />
-            <Button onClick={handleSetReminder}>Hatırlatıcıyı Kaydet</Button>
-          </CardContent>
-        </Card>
-
-        {/* Tarif Listesi (Senin kodun buraya devam etmeli) */}
         {recipeMatches.length > 0 ? (
-          <RecipeList recipeMatches={recipeMatches} />
+          <RecipeList recipeMatches={recipeMatches} onSetReminder={setReminder} />
         ) : (
-          <div className="text-center py-12"><Refrigerator className="mx-auto h-12 w-12 text-muted-foreground/40" /> <p>Tarif bulunamadı.</p></div>
+          <div className="text-center py-12 border-2 border-dashed rounded-xl flex flex-col items-center justify-center bg-card">
+            <Refrigerator className="h-12 w-12 text-muted-foreground/40 mb-3" />
+            <p className="text-card-foreground text-lg font-semibold">
+              {pantryCount === 0 ? "Dolabınızda henüz malzeme bulunmuyor." : "Veritabanımızda tarif bulunamadı."}
+            </p>
+            <p className="text-sm text-amber-500 mt-1 font-medium">Lütfen dolabınıza malzeme ve gramaj eklemeye başlayın.</p>
+          </div>
         )}
       </main>
     </div>
