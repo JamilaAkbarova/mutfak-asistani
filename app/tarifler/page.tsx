@@ -1,88 +1,161 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Bell, ChefHat, Loader2 } from 'lucide-react'
-import { useToast } from '@/hooks/use-toast' // Toast kullanıyorsan import et
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { ChefHat, Loader2, CheckCircle } from 'lucide-react'
 
-export default function RecipesPage() {
+export default function SignUpPage() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [fullName, setFullName] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
-  const { toast } = useToast()
 
-  const handleSetReminder = async () => {
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
     setLoading(true)
-    try {
-      const webhookUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL
-      
-      if (!webhookUrl) {
-        throw new Error("Webhook URL yapılandırılmamış.")
-      }
 
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'set_reminder',
-          message: 'Yemek saati yaklaşıyor! Tariflerinizi kontrol etmeyi unutmayın.',
-          timestamp: new Date().toISOString(),
-        }),
-      })
-
-      if (!response.ok) throw new Error('Bildirim gönderilemedi.')
-
-      toast({
-        title: "Başarılı!",
-        description: "Hatırlatıcı başarıyla Telegram'a gönderildi.",
-      })
-    } catch (error) {
-      console.error(error)
-      toast({
-        variant: "destructive",
-        title: "Hata",
-        description: "Hatırlatıcı kurulurken bir sorun oluştu.",
-      })
-    } finally {
+    if (password.length < 6) {
+      setError('Sifre en az 6 karakter olmalidir.')
       setLoading(false)
+      return
     }
+
+    const supabase = createClient()
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo:
+          process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ??
+          `${window.location.origin}/auth/callback`,
+        data: {
+          full_name: fullName,
+        },
+      },
+    })
+
+    if (error) {
+      if (error.message.includes('already registered')) {
+        setError('Bu email adresi zaten kayitli.')
+      } else {
+        setError('Kayit sirasinda bir hata olustu. Lutfen tekrar deneyin.')
+      }
+      setLoading(false)
+      return
+    }
+
+    setSuccess(true)
+    setLoading(false)
+  }
+
+  if (success) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-to-b from-primary/5 to-transparent">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-accent/10">
+              <CheckCircle className="h-8 w-8 text-accent" />
+            </div>
+            <CardTitle className="text-2xl">Kayit Başarılı!</CardTitle>
+            <CardDescription>
+              Email adresinize bir dogrulama linki gönderdik. Lütfen email kutunuzu kontrol edin ve hesabınızı dogrulayın.
+            </CardDescription>
+          </CardHeader>
+          <CardFooter className="flex justify-center">
+            {/* BURASI DÜZELTİLDİ: /giris */}
+            <Link href="/giris">
+              <Button variant="outline">Giriş Sayfasına Dön</Button>
+            </Link>
+          </CardFooter>
+        </Card>
+      </div>
+    )
   }
 
   return (
-    <div className="container mx-auto py-12 px-4">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Tarifleriniz</h1>
-        <Button 
-          onClick={handleSetReminder} 
-          disabled={loading}
-          variant="secondary"
-        >
-          {loading ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Bell className="mr-2 h-4 w-4" />
-          )}
-          Hatırlatıcı Kur
-        </Button>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {/* Buraya tarif listeleme bileşenlerini ekleyebilirsin */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ChefHat className="h-5 w-5 text-primary" />
-              Örnek Tarif
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              Dolabınızdaki malzemelerle yapabileceğiniz harika bir başlangıç tarifi.
-            </p>
+    <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-to-b from-primary/5 to-transparent">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+            <ChefHat className="h-8 w-8 text-primary" />
+          </div>
+          <CardTitle className="text-2xl">Hesap Olusturun</CardTitle>
+          <CardDescription>
+            Mutfak asistanını kullanmak icin ücretsiz kayıt olun
+          </CardDescription>
+        </CardHeader>
+        <form onSubmit={handleSignUp}>
+          <CardContent className="space-y-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="fullName">Ad Soyad</Label>
+              <Input
+                id="fullName"
+                type="text"
+                placeholder="Adınız Soyadınız"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="ornek@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Şifre</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="En az 6 karakter"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+              />
+            </div>
           </CardContent>
-        </Card>
-      </div>
+          <CardFooter className="flex flex-col gap-4">
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Kayıt Yapılıyor...
+                </>
+              ) : (
+                'Kayıt Ol'
+              )}
+            </Button>
+            <p className="text-center text-sm text-muted-foreground">
+              Zaten hesabiniz var mı?{' '}
+              {/* BURASI DÜZELTİLDİ: /giriş yerine /giris */}
+              <Link href="/giris" className="font-medium text-primary hover:underline">
+                Giriş Yapın
+              </Link>
+            </p>
+          </CardFooter>
+        </form>
+      </Card>
     </div>
   )
 }
