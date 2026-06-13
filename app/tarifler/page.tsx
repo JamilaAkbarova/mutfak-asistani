@@ -1,161 +1,92 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Bell, ChefHat, Loader2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { ChefHat, Loader2, CheckCircle } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast' 
 
-export default function SignUpPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [fullName, setFullName] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
+export default function RecipesPage() {
   const [loading, setLoading] = useState(false)
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
+  const { toast } = useToast()
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
+  const handleSetReminder = async () => {
     setLoading(true)
+    try {
+      const webhookUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL
+      if (!webhookUrl) throw new Error("Webhook URL eksik.")
 
-    if (password.length < 6) {
-      setError('Sifre en az 6 karakter olmalidir.')
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'set_reminder',
+          message: 'Yemek saati yaklaşıyor!',
+          targetDate: selectedDate,
+          timestamp: new Date().toISOString(),
+        }),
+      })
+
+      if (!response.ok) throw new Error('Bildirim gönderilemedi.')
+
+      toast({
+        title: "Başarılı!",
+        description: `${selectedDate} tarihi için hatırlatıcı kuruldu.`,
+      })
+    } catch (error) {
+      toast({ variant: "destructive", title: "Hata", description: "İşlem başarısız." })
+    } finally {
       setLoading(false)
-      return
     }
-
-    const supabase = createClient()
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo:
-          process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ??
-          `${window.location.origin}/auth/callback`,
-        data: {
-          full_name: fullName,
-        },
-      },
-    })
-
-    if (error) {
-      if (error.message.includes('already registered')) {
-        setError('Bu email adresi zaten kayitli.')
-      } else {
-        setError('Kayit sirasinda bir hata olustu. Lutfen tekrar deneyin.')
-      }
-      setLoading(false)
-      return
-    }
-
-    setSuccess(true)
-    setLoading(false)
-  }
-
-  if (success) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-to-b from-primary/5 to-transparent">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-accent/10">
-              <CheckCircle className="h-8 w-8 text-accent" />
-            </div>
-            <CardTitle className="text-2xl">Kayit Başarılı!</CardTitle>
-            <CardDescription>
-              Email adresinize bir dogrulama linki gönderdik. Lütfen email kutunuzu kontrol edin ve hesabınızı dogrulayın.
-            </CardDescription>
-          </CardHeader>
-          <CardFooter className="flex justify-center">
-            {/* BURASI DÜZELTİLDİ: /giris */}
-            <Link href="/giris">
-              <Button variant="outline">Giriş Sayfasına Dön</Button>
-            </Link>
-          </CardFooter>
-        </Card>
-      </div>
-    )
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-to-b from-primary/5 to-transparent">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-            <ChefHat className="h-8 w-8 text-primary" />
-          </div>
-          <CardTitle className="text-2xl">Hesap Olusturun</CardTitle>
-          <CardDescription>
-            Mutfak asistanını kullanmak icin ücretsiz kayıt olun
-          </CardDescription>
+    <div className="container mx-auto py-12 px-4">
+      <h1 className="text-3xl font-bold mb-8">Tariflerim</h1>
+
+      {/* Hatırlatıcı Paneli */}
+      <Card className="mb-8 border-primary/20 bg-primary/5">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Bell className="h-5 w-5 text-primary" />
+            Hatırlatıcı Kur
+          </CardTitle>
         </CardHeader>
-        <form onSubmit={handleSignUp}>
-          <CardContent className="space-y-4">
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Ad Soyad</Label>
-              <Input
-                id="fullName"
-                type="text"
-                placeholder="Adınız Soyadınız"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="ornek@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Şifre</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="En az 6 karakter"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-              />
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Kayıt Yapılıyor...
-                </>
-              ) : (
-                'Kayıt Ol'
-              )}
-            </Button>
-            <p className="text-center text-sm text-muted-foreground">
-              Zaten hesabiniz var mı?{' '}
-              {/* BURASI DÜZELTİLDİ: /giriş yerine /giris */}
-              <Link href="/giris" className="font-medium text-primary hover:underline">
-                Giriş Yapın
-              </Link>
-            </p>
-          </CardFooter>
-        </form>
+        <CardContent className="flex flex-wrap gap-4 items-end">
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium">Tarih</label>
+            <Input 
+              type="date" 
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="w-48"
+            />
+          </div>
+          <Button onClick={handleSetReminder} disabled={loading}>
+            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Kur'}
+          </Button>
+        </CardContent>
       </Card>
+
+      {/* TARİFLER BURADA LİSTELENECEK */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {/* Tariflerin olduğu kartların buraya gelmesi lazım */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ChefHat className="h-5 w-5 text-primary" />
+              Örnek Tarif 1
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">Tarif detayları ve içerik bilgileri burada yer alacak.</p>
+          </CardContent>
+        </Card>
+        
+        {/* Tariflerini fetch ettiğin/listelediğin eski kod bloğunu buraya koyabilirsin */}
+      </div>
     </div>
   )
 }
