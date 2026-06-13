@@ -37,15 +37,16 @@ export default function TariflerPage() {
       });
 
       if (error) throw error;
+    
 
-      await fetch('http://localhost:5678/webhook-test/3899683d-c909-4e38-b6df-69735e4dc8b4', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          recipe_name: match.recipe.name,
-          ingredients_needed: ingredientsList
-        })
-      });
+      //await fetch('http://localhost:5678/webhook-test/3899683d-c909-4e38-b6df-69735e4dc8b4', {
+      //  method: 'POST',
+      //  headers: { 'Content-Type': 'application/json' },
+      //  body: JSON.stringify({
+      //    recipe_name: match.recipe.name,
+      //    ingredients_needed: ingredientsList
+      //  })
+      //});
 
       alert("Harika! Akşam 18:00 için hatırlatıcı kuruldu, Telegram'dan bildirim alacaksın.");
     } catch (e) {
