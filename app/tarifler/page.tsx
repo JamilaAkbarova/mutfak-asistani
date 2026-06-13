@@ -20,15 +20,12 @@ export default function TariflerPage() {
   const [loading, setLoading] = useState(true)
   const [pantryCount, setPantryCount] = useState(0)
 
-  // Hatırlatıcı Kurma Fonksiyonu
   const setReminder = async (match: any) => {
     if (!user) { alert("Hatırlatıcı kurmak için giriş yapmalısınız!"); return; }
     
     try {
-      // Tarifler sayfasında malzemeler "available" ve "missing" olarak ayrıldığı için onları birleştirip listeliyoruz
       const ingredientsList = [...match.availableIngredients, ...match.missingIngredients].map((item: any) => item.ingredient.name);
       
-      // 1. Supabase Veritabanına Kaydet
       const { error } = await supabase.from('reminders').insert({
         user_id: user.id,
         recipe_name: match.recipe.name,
@@ -38,7 +35,6 @@ export default function TariflerPage() {
 
       if (error) throw error;
 
-      // 2. n8n Webhook'una Sinyal Gönder
       await fetch('http://localhost:5678/webhook-test/3899683d-c909-4e38-b6df-69735e4dc8b4', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -219,7 +215,6 @@ export default function TariflerPage() {
         </div>
         
         {recipeMatches.length > 0 ? (
-          // OLUŞTURDUĞUMUZ FONKSİYONU BİLEŞENE GÖNDERİYORUZ
           <RecipeList recipeMatches={recipeMatches} onSetReminder={setReminder} />
         ) : (
           <div className="text-center py-12 border-2 border-dashed rounded-xl flex flex-col items-center justify-center bg-card">

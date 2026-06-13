@@ -95,7 +95,6 @@ export default function DunyaMutfagiPage() {
             onClick={() => setSelectedRecipe(recipe)}
           >
             <div className="relative h-48 w-full bg-muted">
-              {/* AKILLI GÖRSEL ARAMA EKLENDİ */}
               <img 
                 src={`https://nkrhmwnjnoxhbcpsvxus.supabase.co/storage/v1/object/public/recipe-images/${recipe.id}.jpeg`} 
                 alt={recipe.name} 
@@ -161,7 +160,6 @@ export default function DunyaMutfagiPage() {
               <Button variant="ghost" size="icon" className="absolute right-4 top-4 rounded-full" onClick={() => setSelectedRecipe(null)}><X className="h-5 w-5" /></Button>
               <h2 className="text-2xl font-bold mb-4">{selectedRecipe.name}</h2>
               
-              {/* AKILLI GÖRSEL ARAMA EKLENDİ */}
               <img 
                 src={`https://nkrhmwnjnoxhbcpsvxus.supabase.co/storage/v1/object/public/recipe-images/${selectedRecipe.id}.jpeg`} 
                 className="h-64 w-full object-cover rounded-lg mb-6" 

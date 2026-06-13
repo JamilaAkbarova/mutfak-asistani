@@ -11,7 +11,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ChefHat, Loader2 } from 'lucide-react'
 
-// Asıl içeriğin ve mantığın çalıştığı iç bileşen
 function LoginContent() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -41,7 +40,6 @@ function LoginContent() {
       return
     }
 
-    // Telegram bildirimi gönder
     try {
       await fetch('http://localhost:5678/webhook-test/login-alert', {
         method: 'POST',
@@ -71,11 +69,7 @@ function LoginContent() {
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
             <ChefHat className="h-8 w-8 text-primary" />
           </div>
-
-          <CardTitle className="text-2xl">
-            Hoş Geldiniz
-          </CardTitle>
-
+          <CardTitle className="text-2xl">Hoş Geldiniz</CardTitle>
           <CardDescription>
             Hesabınıza giriş yapın ve yemek planlamaya başlayın
           </CardDescription>
@@ -86,53 +80,38 @@ function LoginContent() {
             {(error || hasError) && (
               <Alert variant="destructive">
                 <AlertDescription>
-                  {error ||
-                    'Bir hata oluştu. Lütfen tekrar deneyiniz.'}
+                  {error || 'Bir hata oluştu. Lütfen tekrar deneyiniz.'}
                 </AlertDescription>
               </Alert>
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email">
-                Email
-              </Label>
-
+              <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="ornek@email.com"
                 value={email}
-                onChange={(e) =>
-                  setEmail(e.target.value)
-                }
+                onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">
-                Şifre
-              </Label>
-
+              <Label htmlFor="password">Şifre</Label>
               <Input
                 id="password"
                 type="password"
                 placeholder="Şifrenizi girin"
                 value={password}
-                onChange={(e) =>
-                  setPassword(e.target.value)
-                }
+                onChange={(e) => setPassword(e.target.value)}
                 required
               />
             </div>
           </CardContent>
 
           <CardFooter className="flex flex-col gap-4">
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={loading}
-            >
+            <Button type="submit" className="w-full" disabled={loading}>
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -145,10 +124,8 @@ function LoginContent() {
 
             <p className="text-center text-sm text-muted-foreground">
               Hesabınız yok mu?{' '}
-              <Link
-                href="/kayıt"
-                className="font-medium text-primary hover:underline"
-              >
+              {/* BURADAKİ LİNK /kayıt YERİNE /kayit OLARAK DÜZELTİLDİ */}
+              <Link href="/kayit" className="font-medium text-primary hover:underline">
                 Kayıt Olun
               </Link>
             </p>
@@ -159,7 +136,6 @@ function LoginContent() {
   )
 }
 
-// Suspense ile sarmalanmış ana sayfa bileşeni (Vercel Prerender hatasını çözen kısım)
 export default function LoginPage() {
   return (
     <Suspense fallback={

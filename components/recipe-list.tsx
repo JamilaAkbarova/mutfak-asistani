@@ -24,7 +24,6 @@ export function RecipeList({ recipeMatches, onSetReminder }: RecipeListProps) {
             onClick={() => setSelectedRecipe(match)}
           >
             <div className="relative h-48 w-full bg-muted">
-              {/* AKILLI GÖRSEL ARAMA EKLENDİ */}
               <img 
                 src={`https://nkrhmwnjnoxhbcpsvxus.supabase.co/storage/v1/object/public/recipe-images/${match.recipe.id}.jpeg`} 
                 alt={match.recipe.name} 
@@ -103,7 +102,6 @@ export function RecipeList({ recipeMatches, onSetReminder }: RecipeListProps) {
               <h2 className="text-2xl font-bold tracking-tight">{selectedRecipe.recipe.name}</h2>
               
               <div className="h-64 w-full rounded-lg overflow-hidden bg-muted">
-                {/* AKILLI GÖRSEL ARAMA EKLENDİ */}
                 <img 
                   src={`https://nkrhmwnjnoxhbcpsvxus.supabase.co/storage/v1/object/public/recipe-images/${selectedRecipe.recipe.id}.jpeg`} 
                   alt={selectedRecipe.recipe.name} 
