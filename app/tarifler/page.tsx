@@ -1,92 +1,90 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { Navbar } from '@/components/navbar'
+import { RecipeList } from '@/components/recipe-list'
+import { Loader2, Refrigerator, Bell, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Bell, ChefHat, Loader2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
-import { useToast } from '@/hooks/use-toast' 
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useToast } from '@/hooks/use-toast'
 
-export default function RecipesPage() {
-  const [loading, setLoading] = useState(false)
+export default function TariflerPage() {
+  const supabase = createClient()
+  const [user, setUser] = useState<any>(null)
+  const [recipeMatches, setRecipeMatches] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [pantryCount, setPantryCount] = useState(0)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const { toast } = useToast()
 
+  // 1. Hatırlatıcı Kurma Fonksiyonu
   const handleSetReminder = async () => {
-    setLoading(true)
     try {
       const webhookUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL
-      if (!webhookUrl) throw new Error("Webhook URL eksik.")
+      if (!webhookUrl) throw new Error("Webhook URL yapılandırılmamış.")
 
-      const response = await fetch(webhookUrl, {
+      await fetch(webhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'set_reminder',
-          message: 'Yemek saati yaklaşıyor!',
-          targetDate: selectedDate,
-          timestamp: new Date().toISOString(),
-        }),
+        body: JSON.stringify({ action: 'set_reminder', targetDate: selectedDate }),
       })
-
-      if (!response.ok) throw new Error('Bildirim gönderilemedi.')
-
-      toast({
-        title: "Başarılı!",
-        description: `${selectedDate} tarihi için hatırlatıcı kuruldu.`,
-      })
-    } catch (error) {
-      toast({ variant: "destructive", title: "Hata", description: "İşlem başarısız." })
-    } finally {
-      setLoading(false)
+      toast({ title: "Başarılı!", description: "Hatırlatıcı kuruldu." })
+    } catch (e) {
+      toast({ variant: "destructive", title: "Hata", description: "Hatırlatıcı başarısız." })
     }
   }
 
+  // 2. Verileri Çeken Fonksiyon (Senin orijinal kodun)
+  useEffect(() => {
+    async function loadTarifler() {
+      try {
+        setLoading(true)
+        const { data: { user: u } } = await supabase.auth.getUser()
+        setUser(u)
+
+        const savedPantry = localStorage.getItem('kitchen_pantry')
+        const pantryItems = savedPantry ? JSON.parse(savedPantry) : []
+        setPantryCount(pantryItems.length)
+
+        if (pantryItems.length === 0) { setLoading(false); return; }
+
+        // Supabase'den tarifleri çek... (Senin orijinal kodun buraya gelecek)
+        // ... (Veri çekme ve match işlemleri)
+        
+      } catch (err) {
+        console.error("Hata:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadTarifler()
+  }, [supabase])
+
+  if (loading) return <div className="flex min-h-screen items-center justify-center"><Loader2 className="animate-spin h-8 w-8" /></div>
+
   return (
-    <div className="container mx-auto py-12 px-4">
-      <h1 className="text-3xl font-bold mb-8">Tariflerim</h1>
-
-      {/* Hatırlatıcı Paneli */}
-      <Card className="mb-8 border-primary/20 bg-primary/5">
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Bell className="h-5 w-5 text-primary" />
-            Hatırlatıcı Kur
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-4 items-end">
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium">Tarih</label>
-            <Input 
-              type="date" 
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-48"
-            />
-          </div>
-          <Button onClick={handleSetReminder} disabled={loading}>
-            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Kur'}
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* TARİFLER BURADA LİSTELENECEK */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {/* Tariflerin olduğu kartların buraya gelmesi lazım */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ChefHat className="h-5 w-5 text-primary" />
-              Örnek Tarif 1
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">Tarif detayları ve içerik bilgileri burada yer alacak.</p>
+    <div className="min-h-screen bg-background">
+      <Navbar user={user} />
+      <main className="mx-auto max-w-7xl px-4 py-8">
+        
+        {/* YENİ: Üstte Hatırlatıcı Paneli */}
+        <Card className="mb-8 border-primary/20">
+          <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Bell className="h-5 w-5 text-primary" /> Hatırlatıcı Kur</CardTitle></CardHeader>
+          <CardContent className="flex flex-wrap gap-4 items-end">
+            <Input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="w-48" />
+            <Button onClick={handleSetReminder}>Hatırlatıcıyı Kaydet</Button>
           </CardContent>
         </Card>
-        
-        {/* Tariflerini fetch ettiğin/listelediğin eski kod bloğunu buraya koyabilirsin */}
-      </div>
+
+        {/* Tarif Listesi (Senin kodun buraya devam etmeli) */}
+        {recipeMatches.length > 0 ? (
+          <RecipeList recipeMatches={recipeMatches} />
+        ) : (
+          <div className="text-center py-12"><Refrigerator className="mx-auto h-12 w-12 text-muted-foreground/40" /> <p>Tarif bulunamadı.</p></div>
+        )}
+      </main>
     </div>
   )
 }
