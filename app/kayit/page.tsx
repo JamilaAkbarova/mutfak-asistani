@@ -18,7 +18,6 @@ export default function SignUpPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -73,6 +72,7 @@ export default function SignUpPage() {
             </CardDescription>
           </CardHeader>
           <CardFooter className="flex justify-center">
+            {/* BURASI DÜZELTİLDİ: /giris */}
             <Link href="/giris">
               <Button variant="outline">Giriş Sayfasına Dön</Button>
             </Link>
@@ -148,7 +148,8 @@ export default function SignUpPage() {
             </Button>
             <p className="text-center text-sm text-muted-foreground">
               Zaten hesabiniz var mı?{' '}
-              <Link href="/giriş" className="font-medium text-primary hover:underline">
+              {/* BURASI DÜZELTİLDİ: /giriş yerine /giris */}
+              <Link href="/giris" className="font-medium text-primary hover:underline">
                 Giriş Yapın
               </Link>
             </p>
