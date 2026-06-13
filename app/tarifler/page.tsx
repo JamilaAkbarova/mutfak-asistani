@@ -21,7 +21,10 @@ export default function TariflerPage() {
   const [pantryCount, setPantryCount] = useState(0)
 
   const setReminder = async (match: any) => {
-    if (!user) { alert("Hatırlatıcı kurmak için giriş yapmalısınız!"); return; }
+    if (!user) { 
+      alert("Hatırlatıcı kurmak için giriş yapmalısınız!"); 
+      return; 
+    }
     
     try {
       const ingredientsList = [...match.availableIngredients, ...match.missingIngredients].map((item: any) => item.ingredient.name);

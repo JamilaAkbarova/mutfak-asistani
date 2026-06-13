@@ -25,7 +25,6 @@ export function Navbar({ user }: NavbarProps) {
     router.refresh()
   }
 
-  // Yeni sekmemizi (Dünya Mutfağı) ve ikonunu buraya ekledik
   const navItems = [
     { href: '/', label: 'Ana Sayfa', icon: Home },
     { href: '/dolap', label: 'Dolabım', icon: Package },
