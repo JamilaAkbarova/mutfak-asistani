@@ -45,12 +45,14 @@ export default async function Home() {
                 </>
               ) : (
                 <>
-                  <Link href="/kayıt">
+                  {/* BURASI DÜZELTİLDİ: /kayıt -> /kayit */}
+                  <Link href="/kayit">
                     <Button size="lg" className="w-full sm:w-auto">
                       Hemen Başla
                     </Button>
                   </Link>
-                  <Link href="/giriş">
+                  {/* BURASI DÜZELTİLDİ: /giriş -> /giris */}
+                  <Link href="/giris">
                     <Button size="lg" variant="outline" className="w-full sm:w-auto">
                       Giriş Yap
                     </Button>
@@ -65,7 +67,7 @@ export default async function Home() {
         <section className="px-4 py-16 sm:py-24">
           <div className="mx-auto max-w-7xl">
             <h2 className="text-center text-3xl font-bold text-foreground sm:text-4xl">
-              Nasıl Calışır?
+              Nasıl Çalışır?
             </h2>
             <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
               <Card className="border-2 border-transparent transition-colors hover:border-primary/20">
@@ -97,7 +99,7 @@ export default async function Home() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
-                    Sistem, dolabınızdaki malzemelere göre en cok eşlesenlerden başlayarak tarifler önerir.
+                    Sistem, dolabınızdaki malzemelere göre en çok eşleşenlerden başlayarak tarifler önerir.
                   </p>
                 </CardContent>
               </Card>
