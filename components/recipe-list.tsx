@@ -20,11 +20,12 @@ function RecipeCard({ match, onSetReminder }: { match: any, onSetReminder: (matc
 
   return (
     <Card className="flex flex-col overflow-hidden hover:shadow-md transition-shadow">
-      {/* FOTOĞRAFLAR GERİ GELDİ */}
-      <div className="relative h-48 w-full bg-muted">
+      
+      {/* FOTOĞRAF ALANI - BURASI EKSİKSİZ ÇALIŞACAK */}
+      <div className="relative h-48 w-full bg-muted overflow-hidden">
         {!imgError ? (
           <img
-            src={match.recipe.image_url || 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?q=80&w=400'}
+            src={match.recipe.image_url}
             alt={match.recipe.name}
             className="h-full w-full object-cover"
             onError={() => setImgError(true)}
