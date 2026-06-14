@@ -22,7 +22,6 @@ export default function TariflerPage() {
   const [loading, setLoading] = useState(true)
   const [pantryCount, setPantryCount] = useState(0)
   
-  // YENİ: Tarih seçimi için state ekledik
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
 
   const setReminder = async (match: any) => {
@@ -43,9 +42,7 @@ export default function TariflerPage() {
 
       if (error) throw error;
     
-      // DÜZELTME: Localhost yerine Vercel'deki çevre değişkenini (n8n url) kullanıyoruz
       const webhookUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL;
-      
       if (webhookUrl) {
         await fetch(webhookUrl, {
           method: 'POST',
@@ -53,11 +50,9 @@ export default function TariflerPage() {
           body: JSON.stringify({
             recipe_name: match.recipe.name,
             ingredients_needed: ingredientsList,
-            target_date: selectedDate // Seçilen tarihi n8n'e gönderiyoruz
+            target_date: selectedDate
           })
         });
-      } else {
-        console.warn("n8n Webhook URL tanımlı değil, Telegram bildirimi atlandı.");
       }
 
       alert(`Harika! ${selectedDate} tarihi için hatırlatıcı kuruldu, Telegram'dan bildirim alacaksın.`);
@@ -187,6 +182,7 @@ export default function TariflerPage() {
                 prepTime: recipe.prep_time || 30,
                 servings: recipe.portions || 4,
                 calories: recipe.calories || 0, 
+                totalCost: recipe.total_cost, // YENİ: MALİYET BURADA EKLENDİ!
                 instructions
               },
               matchPercentage,
@@ -230,7 +226,6 @@ export default function TariflerPage() {
           <p className="mt-2 text-lg text-muted-foreground">Evinizdeki malzemelerin gramajlarına göre tam hesaplanmış maliyet ve tarif önerileri.</p>
         </div>
 
-        {/* YENİ: Planlama İçin Tarih Seçim Paneli */}
         <Card className="mb-8 border-primary/20 bg-primary/5">
           <CardHeader>
             <CardTitle className="text-md flex items-center gap-2">
@@ -248,9 +243,6 @@ export default function TariflerPage() {
                 className="w-48 bg-background"
               />
             </div>
-            <p className="text-xs text-muted-foreground max-w-md mb-2">
-              Aşağıdan seçtiğiniz tarifin detay penceresinde yer alan "Hatırlatıcı Kur" butonuna bastığınızda, bildiriminiz belirlediğiniz tarihe göre planlanacaktır.
-            </p>
           </CardContent>
         </Card>
         
@@ -262,7 +254,6 @@ export default function TariflerPage() {
             <p className="text-card-foreground text-lg font-semibold">
               {pantryCount === 0 ? "Dolabınızda henüz malzeme bulunmuyor." : "Veritabanımızda tarif bulunamadı."}
             </p>
-            <p className="text-sm text-amber-500 mt-1 font-medium">Lütfen dolabınıza malzeme ve gramaj eklemeye başlayın.</p>
           </div>
         )}
       </main>
