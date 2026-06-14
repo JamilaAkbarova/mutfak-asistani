@@ -4,9 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Navbar } from '@/components/navbar'
 import { RecipeList } from '@/components/recipe-list'
-import { Loader2, Refrigerator, Bell } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
+import { Loader2, Refrigerator } from 'lucide-react'
 
 const getUnitInfo = (name: string) => {
   if (!name) return 'Gram';
@@ -21,8 +19,6 @@ export default function TariflerPage() {
   const [recipeMatches, setRecipeMatches] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [pantryCount, setPantryCount] = useState(0)
-  
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
 
   const setReminder = async (match: any) => {
     if (!user) { 
@@ -41,7 +37,7 @@ export default function TariflerPage() {
       });
 
       if (error) throw error;
-    
+
       const webhookUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL;
       if (webhookUrl) {
         await fetch(webhookUrl, {
@@ -50,12 +46,12 @@ export default function TariflerPage() {
           body: JSON.stringify({
             recipe_name: match.recipe.name,
             ingredients_needed: ingredientsList,
-            target_date: selectedDate
+            reminder_time: '18:00:00'
           })
         });
       }
 
-      alert(`Harika! ${selectedDate} tarihi için hatırlatıcı kuruldu, Telegram'dan bildirim alacaksın.`);
+      alert("Harika! Akşam 18:00 için hatırlatıcı kuruldu, Telegram'dan bildirim alacaksın.");
     } catch (e) {
       console.error(e);
       alert("Hatırlatıcı kurulurken bir hata oluştu.");
@@ -182,7 +178,6 @@ export default function TariflerPage() {
                 prepTime: recipe.prep_time || 30,
                 servings: recipe.portions || 4,
                 calories: recipe.calories || 0, 
-                totalCost: recipe.total_cost, // YENİ: MALİYET BURADA EKLENDİ!
                 instructions
               },
               matchPercentage,
@@ -225,26 +220,6 @@ export default function TariflerPage() {
           <h1 className="text-4xl font-extrabold tracking-tight text-foreground">Akıllı Tarif Önerileri</h1>
           <p className="mt-2 text-lg text-muted-foreground">Evinizdeki malzemelerin gramajlarına göre tam hesaplanmış maliyet ve tarif önerileri.</p>
         </div>
-
-        <Card className="mb-8 border-primary/20 bg-primary/5">
-          <CardHeader>
-            <CardTitle className="text-md flex items-center gap-2">
-              <Bell className="h-4 w-4 text-primary" />
-              Yemek Planlama & Hatırlatıcı Ayarı
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-4 items-end">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Hangi Gün Pişireceksiniz?</label>
-              <Input 
-                type="date" 
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-48 bg-background"
-              />
-            </div>
-          </CardContent>
-        </Card>
         
         {recipeMatches.length > 0 ? (
           <RecipeList recipeMatches={recipeMatches} onSetReminder={setReminder} />
@@ -254,6 +229,7 @@ export default function TariflerPage() {
             <p className="text-card-foreground text-lg font-semibold">
               {pantryCount === 0 ? "Dolabınızda henüz malzeme bulunmuyor." : "Veritabanımızda tarif bulunamadı."}
             </p>
+            <p className="text-sm text-amber-500 mt-1 font-medium">Lütfen dolabınıza malzeme ve gramaj eklemeye başlayın.</p>
           </div>
         )}
       </main>
