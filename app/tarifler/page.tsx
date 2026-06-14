@@ -21,7 +21,7 @@ export default function TariflerPage() {
   const [recipeMatches, setRecipeMatches] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [pantryCount, setPantryCount] = useState(0)
-  
+
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
 
   const setReminder = async (match: any) => {
@@ -41,7 +41,7 @@ export default function TariflerPage() {
       });
 
       if (error) throw error;
-    
+
       const webhookUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL;
       if (webhookUrl) {
         await fetch(webhookUrl, {
@@ -113,6 +113,10 @@ export default function TariflerPage() {
         if (error) throw error
 
         if (recipesData && recipesData.length > 0) {
+          // BÜYÜK ÇÖZÜM: Supabase bağlantı kökünü doğrudan tanımlıyoruz
+          const supabaseBaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://nkrhmwnjnoxhbcpsvxus.supabase.co';
+          const storageUrl = `${supabaseBaseUrl}/storage/v1/object/public/recipe-images`;
+
           const matchedRecipes = recipesData.map((recipe: any) => {
             const allReqIngredients = recipe.recipe_ingredients || []
 
@@ -173,19 +177,14 @@ export default function TariflerPage() {
               instructions = ['Malzemeleri hazırlayın.', 'Tarif adımlarını uygulayarak pişirme işlemini tamamlayın.', 'Sıcak servis edin.']
             }
 
-            // GÜNCELLEME: Çözüm 1 kapsamında eklenen Supabase Storage URL oluşturma mantığı
-            const baseUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/recipe-images`
-            const imageUrlJpg = `${baseUrl}/${recipe.id}.jpg`
-            const imageUrlJpeg = `${baseUrl}/${recipe.id}.jpeg`
-            const imageUrlPng = `${baseUrl}/${recipe.id}.png`
-
             return {
               recipe: {
                 id: recipe.id,
                 name: recipe.name,
-                image_url: imageUrlJpg,
-                image_url_jpeg: imageUrlJpeg,
-                image_url_png: imageUrlPng,
+                // Resim linklerini dinamik olarak üretiyoruz (Burası fotoğrafları getirecek!)
+                image_url: `${storageUrl}/${recipe.id}.jpeg`, 
+                image_url_jpeg: `${storageUrl}/${recipe.id}.jpg`, 
+                image_url_png: `${storageUrl}/${recipe.id}.png`,  
                 description: recipe.description || 'Mutfak Asistanı veritabanından, dolabınızdaki malzemelere özel olarak listelenmiştir.',
                 prepTime: recipe.prep_time || 30,
                 servings: recipe.portions || 4,
