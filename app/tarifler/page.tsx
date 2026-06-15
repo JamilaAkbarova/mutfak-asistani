@@ -4,9 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Navbar } from '@/components/navbar'
 import { RecipeList } from '@/components/recipe-list'
-import { Loader2, Refrigerator, Bell } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
+import { Loader2, Refrigerator } from 'lucide-react'
 
 const getUnitInfo = (name: string) => {
   if (!name) return 'Gram';
@@ -22,9 +20,8 @@ export default function TariflerPage() {
   const [loading, setLoading] = useState(true)
   const [pantryCount, setPantryCount] = useState(0)
 
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
-
-  const setReminder = async (match: any) => {
+  // setReminder artık tarih ve saati RecipeCard'ın içindeki modaldan parametre olarak alıyor
+  const setReminder = async (match: any, targetDate: string, targetTime: string) => {
     if (!user) {
       alert("Hatırlatıcı kurmak için giriş yapmalısınız!");
       return;
@@ -37,7 +34,8 @@ export default function TariflerPage() {
         user_id: user.id,
         recipe_name: match.recipe.name,
         ingredients_needed: ingredientsList,
-        reminder_time: '18:00:00'
+        reminder_time: `${targetTime}:00`,
+        reminder_date: targetDate
       });
 
       if (error) throw error;
@@ -50,12 +48,15 @@ export default function TariflerPage() {
           body: JSON.stringify({
             recipe_name: match.recipe.name,
             ingredients_needed: ingredientsList,
-            target_date: selectedDate
+            target_date: targetDate,
+            target_time: targetTime
           })
         });
       }
 
-      alert(`Harika! ${selectedDate} tarihi için hatırlatıcı kuruldu, Telegram'dan bildirim alacaksın.`);
+      alert(
+        `Harika! ${targetDate} tarihinde saat ${targetTime} için hatırlatıcı kuruldu. Telegram'dan bildirim alacaksın.`
+      );
     } catch (e) {
       console.error(e);
       alert("Hatırlatıcı kurulurken bir hata oluştu.");
@@ -113,7 +114,6 @@ export default function TariflerPage() {
         if (error) throw error
 
         if (recipesData && recipesData.length > 0) {
-          // BÜYÜK ÇÖZÜM: Supabase bağlantı kökünü doğrudan tanımlıyoruz
           const supabaseBaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://nkrhmwnjnoxhbcpsvxus.supabase.co';
           const storageUrl = `${supabaseBaseUrl}/storage/v1/object/public/recipe-images`;
 
@@ -181,7 +181,6 @@ export default function TariflerPage() {
               recipe: {
                 id: recipe.id,
                 name: recipe.name,
-                // Resim linklerini dinamik olarak üretiyoruz (Burası fotoğrafları getirecek!)
                 image_url: `${storageUrl}/${recipe.id}.jpeg`,
                 image_url_jpeg: `${storageUrl}/${recipe.id}.jpg`,
                 image_url_png: `${storageUrl}/${recipe.id}.png`,
@@ -197,7 +196,6 @@ export default function TariflerPage() {
               missingIngredients,
               estimatedCost: Math.round(missingCost * 100) / 100
             }
-            console.log(recipe.name, recipe.total_cost)
           })
 
           const sortedMatches = matchedRecipes
@@ -234,26 +232,7 @@ export default function TariflerPage() {
           <p className="mt-2 text-lg text-muted-foreground">Evinizdeki malzemelerin gramajlarına göre tam hesaplanmış maliyet ve tarif önerileri.</p>
         </div>
 
-        <Card className="mb-8 border-primary/20 bg-primary/5">
-          <CardHeader>
-            <CardTitle className="text-md flex items-center gap-2">
-              <Bell className="h-4 w-4 text-primary" />
-              Yemek Planlama & Hatırlatıcı Ayarı
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-4 items-end">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Hangi Gün Pişireceksiniz?</label>
-              <Input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-48 bg-background"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
+        {/* Gereksiz Yemek Planlama Kartı buradan tamamen silindi! Sadece RecipeList kalıyor. */}
         {recipeMatches.length > 0 ? (
           <RecipeList recipeMatches={recipeMatches} onSetReminder={setReminder} />
         ) : (

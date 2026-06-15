@@ -1,11 +1,11 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Bell, ChefHat, Clock, Flame, Users, X, TurkishLira } from 'lucide-react'
 import { useState } from 'react'
 
-export function RecipeList({ recipeMatches, onSetReminder }: { recipeMatches: any[], onSetReminder: (match: any) => void }) {
+export function RecipeList({ recipeMatches, onSetReminder }: { recipeMatches: any[], onSetReminder: (match: any, date: string, time: string) => void }) {
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
       {recipeMatches.map((match, index) => (
@@ -15,20 +15,21 @@ export function RecipeList({ recipeMatches, onSetReminder }: { recipeMatches: an
   )
 }
 
-function RecipeCard({ match, onSetReminder }: { match: any, onSetReminder: (match: any) => void }) {
-  console.log(match.recipe)
+function RecipeCard({ match, onSetReminder }: { match: any, onSetReminder: (match: any, date: string, time: string) => void }) {
   const [imgError, setImgError] = useState(false)
-  const [imgIndex, setImgIndex] = useState(0) // Sırayı takip etmek için state
+  const [imgIndex, setImgIndex] = useState(0)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  // Denenecek alternatif resim listesi sıralaması (.jpg -> .jpeg -> .png)
+  // Tarih ve saat seçimlerini artık bu kartın içinde yönetiyoruz
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
+  const [selectedTime, setSelectedTime] = useState('18:00')
+
   const imageUrls = [
     match.recipe.image_url,
     match.recipe.image_url_jpeg,
     match.recipe.image_url_png
   ].filter(Boolean)
 
-  // Eğer bir uzantı hata verirse sonrakine geçiren akıllı fonksiyon
   const handleImageError = () => {
     if (imgIndex < imageUrls.length - 1) {
       setImgIndex(prev => prev + 1)
@@ -37,14 +38,11 @@ function RecipeCard({ match, onSetReminder }: { match: any, onSetReminder: (matc
     }
   }
 
-  // Toplam malzeme sayısını hesapla
   const totalIngredients = match.availableIngredients.length + match.missingIngredients.length;
 
   return (
     <>
-      <Card className="flex flex-col overflow-hidden hover:shadow-md transition-shadow bg-card border-border rounded-xl">
-
-        {/* Fotoğraf ve Eşleşme Yüzdesi Alanı */}
+      <Card className="flex flex-col overflow-hidden hover:shadow-lg transition-all duration-300 border-2 cursor-pointer">
         <div className="relative h-56 w-full bg-muted">
           {!imgError && imageUrls.length > 0 ? (
             <img
@@ -58,23 +56,21 @@ function RecipeCard({ match, onSetReminder }: { match: any, onSetReminder: (matc
               <ChefHat className="h-12 w-12 text-muted-foreground/50" />
             </div>
           )}
-
-          {/* Eşleşme Oranı Rozeti */}
           <div className="absolute top-3 right-3 bg-background/95 backdrop-blur-sm px-3 py-1 rounded-md shadow-sm text-xs font-semibold text-foreground">
             % {match.matchPercentage} Eşleşme
           </div>
         </div>
 
-        {/* Başlık ve Açıklama */}
-        <div className="p-5">
-          <h3 className="font-bold text-xl line-clamp-1 text-foreground">{match.recipe.name}</h3>
-          <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+        {/* Yeni Dünya Mutfağı Stili Header */}
+        <CardHeader className="p-4 flex-1">
+          <CardTitle className="line-clamp-1 text-xl">{match.recipe.name}</CardTitle>
+          <CardDescription className="line-clamp-2 mt-1 text-xs">
             {match.recipe.description}
-          </p>
-        </div>
+          </CardDescription>
+        </CardHeader>
 
-        {/* Ortadaki İstatistik Çizgisi (Süre, Kişi, Kalori) */}
-        <div className="grid grid-cols-4 border-y border-border py-4 text-center text-muted-foreground text-sm">
+        {/* Yeni Dünya Mutfağı Stili İstatistikler */}
+        <CardContent className="px-4 py-2 border-t border-b bg-muted/20 grid grid-cols-4 gap-2 text-center text-xs">
           <div className="flex flex-col items-center gap-1.5">
             <Clock className="h-4 w-4" />
             <span>{match.recipe.prepTime} dk</span>
@@ -89,14 +85,12 @@ function RecipeCard({ match, onSetReminder }: { match: any, onSetReminder: (matc
           </div>
           <div className="flex flex-col items-center gap-1.5">
             <TurkishLira className="h-4 w-4 text-green-600" />
-            <span>
-              {match.recipe.totalCost?.toFixed(0) ?? '0'} TL
-            </span>
+            <span>{match.recipe.totalCost?.toFixed(0) ?? '0'} TL</span>
           </div>
-        </div>
+        </CardContent>
 
-        {/* En Alt Kısım (Malzeme Sayısı ve Turuncu Buton) */}
-        <div className="p-4 flex items-center justify-between mt-auto">
+        {/* Yeni Dünya Mutfağı Stili Alt Kısım */}
+        <CardFooter className="p-4 flex items-center justify-between">
           <span className="text-sm text-muted-foreground font-medium">{totalIngredients} Malzeme</span>
           <Button
             className="bg-[#ea580c] hover:bg-[#c2410c] text-white rounded-lg px-6 font-semibold transition-colors"
@@ -104,7 +98,7 @@ function RecipeCard({ match, onSetReminder }: { match: any, onSetReminder: (matc
           >
             Tarifi Gör
           </Button>
-        </div>
+        </CardFooter>
       </Card>
 
       {/* DİNAMİK DETAY PENCERESİ (MODAL) */}
@@ -121,6 +115,15 @@ function RecipeCard({ match, onSetReminder }: { match: any, onSetReminder: (matc
 
             <div className="flex flex-col gap-5">
               <h2 className="text-2xl font-bold pr-8 border-b pb-2">{match.recipe.name}</h2>
+              
+              {/* Modal İçi Büyük Fotoğraf Eklentisi */}
+              {!imgError && (
+                <img
+                  src={imageUrls[imgIndex]}
+                  className="h-64 w-full object-cover rounded-lg mt-2 mb-2"
+                  alt={match.recipe.name}
+                />
+              )}
 
               <div className="flex flex-wrap gap-4 text-sm text-muted-foreground bg-muted/60 p-3 rounded-lg">
                 <div className="flex items-center gap-1"><Clock className="h-4 w-4 text-primary" /> <strong>Süre:</strong> {match.recipe.prepTime} dk</div>
@@ -168,18 +171,42 @@ function RecipeCard({ match, onSetReminder }: { match: any, onSetReminder: (matc
                 </ol>
               </div>
 
-              {/* Hatırlatıcı (Planla) Butonu */}
+              {/* İçeriye Taşınan Tarih ve Saat Seçici */}
+              <div className="grid grid-cols-2 gap-4 mt-2">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">
+                    Tarih
+                  </label>
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="w-full rounded-md border p-2 bg-background"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">
+                    Saat
+                  </label>
+                  <input
+                    type="time"
+                    value={selectedTime}
+                    onChange={(e) => setSelectedTime(e.target.value)}
+                    className="w-full rounded-md border p-2 bg-background"
+                  />
+                </div>
+              </div>
+
               <div className="mt-4 flex justify-end gap-3 border-t pt-4">
                 <Button variant="outline" onClick={() => setIsModalOpen(false)}>Kapat</Button>
                 <Button className="bg-primary text-primary-foreground" onClick={() => {
-                  onSetReminder(match)
+                  onSetReminder(match, selectedDate, selectedTime)
                   setIsModalOpen(false)
                 }}>
                   <Bell className="mr-2 h-4 w-4" />
                   Hatırlatıcı Kur (Planla)
                 </Button>
               </div>
-
 
             </div>
           </div>
