@@ -21,6 +21,7 @@ export default function TariflerPage() {
   const [pantryCount, setPantryCount] = useState(0)
 
   // setReminder artık tarih ve saati RecipeCard'ın içindeki modaldan parametre olarak alıyor
+  // ve YALNIZCA veritabanına kayıt yapıyor. n8n arka planda kendisi çalışacak.
   const setReminder = async (match: any, targetDate: string, targetTime: string) => {
     if (!user) {
       alert("Hatırlatıcı kurmak için giriş yapmalısınız!");
@@ -40,22 +41,8 @@ export default function TariflerPage() {
 
       if (error) throw error;
 
-      const webhookUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL;
-      if (webhookUrl) {
-        await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            recipe_name: match.recipe.name,
-            ingredients_needed: ingredientsList,
-            target_date: targetDate,
-            target_time: targetTime
-          })
-        });
-      }
-
       alert(
-        `Harika! ${targetDate} tarihinde saat ${targetTime} için hatırlatıcı kuruldu. Telegram'dan bildirim alacaksın.`
+        `Harika! ${targetDate} tarihinde saat ${targetTime} için hatırlatıcı kuruldu. Zamanı geldiğinde Telegram'dan bildirim alacaksın.`
       );
     } catch (e) {
       console.error(e);
@@ -232,7 +219,6 @@ export default function TariflerPage() {
           <p className="mt-2 text-lg text-muted-foreground">Evinizdeki malzemelerin gramajlarına göre tam hesaplanmış maliyet ve tarif önerileri.</p>
         </div>
 
-        {/* Gereksiz Yemek Planlama Kartı buradan tamamen silindi! Sadece RecipeList kalıyor. */}
         {recipeMatches.length > 0 ? (
           <RecipeList recipeMatches={recipeMatches} onSetReminder={setReminder} />
         ) : (
