@@ -25,14 +25,14 @@ export default function TariflerPage() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
 
   const setReminder = async (match: any) => {
-    if (!user) { 
-      alert("Hatırlatıcı kurmak için giriş yapmalısınız!"); 
-      return; 
+    if (!user) {
+      alert("Hatırlatıcı kurmak için giriş yapmalısınız!");
+      return;
     }
-    
+
     try {
       const ingredientsList = [...match.availableIngredients, ...match.missingIngredients].map((item: any) => item.ingredient.name);
-      
+
       const { error } = await supabase.from('reminders').insert({
         user_id: user.id,
         recipe_name: match.recipe.name,
@@ -82,7 +82,7 @@ export default function TariflerPage() {
         const userPantryMap: Record<string, number> = {}
         pantryItems.forEach((item: any) => {
           const id = item.ingredient?.id || item.ingredient_id
-          userPantryMap[id] = item.quantity || 0 
+          userPantryMap[id] = item.quantity || 0
         })
 
         const { data: recipesData, error } = await supabase
@@ -128,9 +128,9 @@ export default function TariflerPage() {
 
             allReqIngredients.forEach((ri: any) => {
               const ingId = ri.ingredients?.id
-              const reqQty = Number(ri.amount_g || 0) 
+              const reqQty = Number(ri.amount_g || 0)
               const userQty = Number(userPantryMap[ingId] || 0)
-              
+
               const isAmountSpecified = reqQty > 0;
               const isSufficient = isAmountSpecified ? (userQty >= reqQty) : (userQty > 0);
               const unitLabel = isAmountSpecified ? getUnitInfo(ri.ingredients?.name) : '';
@@ -143,9 +143,9 @@ export default function TariflerPage() {
               }
 
               if (isSufficient) {
-                availableIngredients.push({ 
-                  ...formattedIng, 
-                  availableQty: isAmountSpecified ? reqQty : 'Göz Kararı (Var)' 
+                availableIngredients.push({
+                  ...formattedIng,
+                  availableQty: isAmountSpecified ? reqQty : 'Göz Kararı (Var)'
                 })
                 completelyAvailableItems++
               } else {
@@ -182,13 +182,14 @@ export default function TariflerPage() {
                 id: recipe.id,
                 name: recipe.name,
                 // Resim linklerini dinamik olarak üretiyoruz (Burası fotoğrafları getirecek!)
-                image_url: `${storageUrl}/${recipe.id}.jpeg`, 
-                image_url_jpeg: `${storageUrl}/${recipe.id}.jpg`, 
-                image_url_png: `${storageUrl}/${recipe.id}.png`,  
+                image_url: `${storageUrl}/${recipe.id}.jpeg`,
+                image_url_jpeg: `${storageUrl}/${recipe.id}.jpg`,
+                image_url_png: `${storageUrl}/${recipe.id}.png`,
                 description: recipe.description || 'Mutfak Asistanı veritabanından, dolabınızdaki malzemelere özel olarak listelenmiştir.',
                 prepTime: recipe.prep_time || 30,
                 servings: recipe.portions || 4,
-                calories: recipe.calories || 0, 
+                calories: recipe.calories || 0,
+                totalCost: recipe.total_cost || 0,
                 instructions
               },
               matchPercentage,
@@ -196,10 +197,11 @@ export default function TariflerPage() {
               missingIngredients,
               estimatedCost: Math.round(missingCost * 100) / 100
             }
+            console.log(recipe.name, recipe.total_cost)
           })
 
           const sortedMatches = matchedRecipes
-            .filter((m: any) => m.matchPercentage >= 0) 
+            .filter((m: any) => m.matchPercentage >= 0)
             .sort((a: any, b: any) => b.matchPercentage - a.matchPercentage)
 
           setRecipeMatches(sortedMatches)
@@ -242,8 +244,8 @@ export default function TariflerPage() {
           <CardContent className="flex flex-wrap gap-4 items-end">
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-semibold text-muted-foreground">Hangi Gün Pişireceksiniz?</label>
-              <Input 
-                type="date" 
+              <Input
+                type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
                 className="w-48 bg-background"
@@ -251,7 +253,7 @@ export default function TariflerPage() {
             </div>
           </CardContent>
         </Card>
-        
+
         {recipeMatches.length > 0 ? (
           <RecipeList recipeMatches={recipeMatches} onSetReminder={setReminder} />
         ) : (
