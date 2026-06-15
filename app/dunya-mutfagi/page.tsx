@@ -16,7 +16,6 @@ export default function DunyaMutfagiPage() {
   const [loading, setLoading] = useState(true)
   const [selectedRecipe, setSelectedRecipe] = useState<any>(null)
   
-  // Tarih ve saat seçimleri modal içinde kullanılmak üzere burada tutuluyor
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split('T')[0]
   )
@@ -56,7 +55,7 @@ export default function DunyaMutfagiPage() {
     loadWorldRecipes()
   }, [supabase])
 
-  // YALNIZCA veritabanına kayıt yapar. n8n arka planda kendisi çalışacak!
+  // Sadece veritabanına kayıt yapar
   const setReminder = async (recipe: any) => {
     if (!user) { 
       alert("Hatırlatıcı kurmak için giriş yapmalısınız!"); 
@@ -78,7 +77,6 @@ export default function DunyaMutfagiPage() {
 
       alert(`Harika! ${selectedDate} tarihinde saat ${selectedTime} için hatırlatıcı kuruldu. Zamanı geldiğinde Telegram'dan bildirim alacaksın.`);
       
-      // Başarılı olunca detay penceresini otomatik kapatır
       setSelectedRecipe(null);
     } catch (e) {
       console.error(e);
@@ -202,7 +200,6 @@ export default function DunyaMutfagiPage() {
                 </div>
               </div>
 
-              {/* İçeriye Taşınan Tarih ve Saat Seçici */}
               <div className="grid grid-cols-2 gap-4 mt-8 bg-muted/30 p-4 rounded-lg border">
                 <div>
                   <label className="text-sm font-semibold mb-2 block text-foreground">
